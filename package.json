@@ -13,6 +13,7 @@
     "jade": "~1.9.2",
     "morgan": "~1.5.1",
     "node-crawler": "git+https://github.com/hnguyen14/node-crawler.git",
+    "request": "^2.53.0",
     "serve-favicon": "~2.2.0",
     "supervisor": "^0.6.0"
   }
