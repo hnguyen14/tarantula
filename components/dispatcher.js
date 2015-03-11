@@ -40,13 +40,14 @@ Dispatcher.prototype.init = function() {
     domain: process.env.DOMAIN,
     port: process.env.PORT
   };
-  this._cluster = [];
-  this._cluster.push(self);
+  this._cluster = {};
+  this.addNode(self);
   if (!(process.env.IS_MASTER || false)) {
     request(process.env.MASTER_URL + '/cluster/getAllNodes', function(err, response, body) {
       var nodes = JSON.parse(body);
-      nodes.forEach(function(node) {
-        this._cluster.push(node);
+      Object.keys(nodes).forEach(function(nodeName) {
+        var node = nodes[nodeName];
+        this.addNode(node);
         addToNode(self, node);
       }.bind(this));
     }.bind(this));
@@ -62,12 +63,17 @@ Dispatcher.prototype.removeNode = function() {
 }
 
 Dispatcher.prototype.addNode = function(node) {
-  this._cluster.push(node);
+  if (!this._cluster[node.name]) {
+    this._cluster[node.name] = node;
+  }
 }
 
 Dispatcher.prototype.dispatch = function(url) {
-  var hash = hashCode(url) % this._cluster.length;
-  var queueUrl = this._cluster[hash].url + '/crawlers/queue';
+  var allNodes = Objects.keys[this._cluster];
+  var hash = hashCode(url) % allNodes.length;
+  var dispatchNode = this._cluster[allNodes[hash]];
+  var port = dispatchNode.port && dispatchNode.port !== '80' ? ':' + dispatchNode.port : ''
+  var queueUrl = 'http://' + dispatchNode.domain + port  + '/crawlers/queue';
   request({
     method: 'POST',
     url: queueUrl,
