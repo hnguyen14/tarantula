@@ -1,0 +1,18 @@
+extends layout
+block content
+  .container
+    h3 Cluster info
+    table.table.table-striped
+      thead
+        tr
+          th Name
+          th Domain
+          th Port
+      each node in cluster
+        tr
+          td #{node.name}
+          td #{node.domain}
+          td #{node.port}
+
+    h3 Local crawler info
+    i none
