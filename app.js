@@ -11,6 +11,8 @@ var cluster = require('./routes/cluster');
 var crawlers = require('./routes/crawlers');
 var users = require('./routes/users');
 
+var dispatcher = require('./config/dispatcher');
+
 var app = express();
 
 // view engine setup
@@ -70,4 +72,13 @@ var server = app.listen(process.env.PORT || 3000, function () {
   console.log('Example app listening at http://%s:%s', host, port)
 
 })
+
+process.on('SIGINT', function() {
+  dispatcher.shutDown().
+    then(function() {
+      console.log('notified all node shutting down');
+      process.exit(0);
+    });
+});
+
 module.exports = app;

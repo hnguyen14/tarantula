@@ -1,4 +1,5 @@
 var request = require('request');
+var Promise = require('promise');
 
 function Dispatcher() {
   this.init();
@@ -15,11 +16,16 @@ function hashCode(str){
   return hash;
 }
 
+function getNodeDomainUrl(node) {
+  var port = node.port && node.port !== 80 ? ':' + node.port : '';
+  return 'http://' + node.domain + port;
+}
+
 function addToNode(self, node) {
   var port = node.port && node.port !== 80 ? ':' + node.port : '';
   request({
     method: 'POST',
-    url: 'http://' + node.domain + port + '/cluster/addNode',
+    url: getNodeDomainUrl(node) + '/cluster/addNode',
     headers: {
       'Content-Type': 'application/json'
     },
@@ -58,8 +64,8 @@ Dispatcher.prototype.getAllNodes = function() {
   return this._cluster;
 }
 
-Dispatcher.prototype.removeNode = function() {
-  // TODO: remove node from local list and broadcast to the rest of the cluster
+Dispatcher.prototype.removeNode = function(nodeName) {
+  delete this._cluster[nodeName]
 }
 
 Dispatcher.prototype.addNode = function(node) {
@@ -68,12 +74,33 @@ Dispatcher.prototype.addNode = function(node) {
   }
 }
 
+Dispatcher.prototype.shutDown = function() {
+  var selfName = process.env.NODE_NAME;
+  return Promise.all(
+    Object.keys(this._cluster).map(function(nodeName) {
+      if (nodeName == selfName) return null;
+      var node = this._cluster[nodeName];
+      return new Promise(function(resolve, reject) {
+        request({
+          method: 'POST',
+          url: getNodeDomainUrl(node) + '/cluster/removeNode',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          json: {
+            nodeName: selfName
+          }
+        }, resolve);
+      });
+    }.bind(this))
+  );
+}
+
 Dispatcher.prototype.dispatch = function(url) {
   var allNodes = Objects.keys[this._cluster];
   var hash = hashCode(url) % allNodes.length;
   var dispatchNode = this._cluster[allNodes[hash]];
-  var port = dispatchNode.port && dispatchNode.port !== '80' ? ':' + dispatchNode.port : ''
-  var queueUrl = 'http://' + dispatchNode.domain + port  + '/crawlers/queue';
+  var queueUrl = getNodeDomainUrl(dispatchNode)  + '/crawlers/queue';
   request({
     method: 'POST',
     url: queueUrl,
