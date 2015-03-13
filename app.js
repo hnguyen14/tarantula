@@ -7,7 +7,6 @@ var bodyParser = require('body-parser');
 
 var routes = require('./routes/index');
 var admin = require('./routes/admin');
-var cluster = require('./routes/cluster');
 var crawlers = require('./routes/crawlers');
 var users = require('./routes/users');
 
@@ -29,7 +28,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
 app.use('/admin', admin);
-app.use('/cluster', cluster);
 app.use('/crawlers', crawlers);
 app.use('/users', users);
 

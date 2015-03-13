@@ -1,6 +1,8 @@
 var request = require('request');
 var Promise = require('promise');
 
+var db = require('../config/db');
+
 function Dispatcher() {
   this.init();
 }
@@ -21,79 +23,28 @@ function getNodeDomainUrl(node) {
   return 'http://' + node.domain + port;
 }
 
-function addToNode(self, node) {
-  var port = node.port && node.port !== 80 ? ':' + node.port : '';
-  request({
-    method: 'POST',
-    url: getNodeDomainUrl(node) + '/cluster/addNode',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    json: self
-  }, function(err, response, body) {
-    if (err) {
-      console.error('error adding self to', node.name);
-    }
-    if (body === 'OK') {
-      console.log('added self to node', node.name);
-    }
-  });
-}
-
 Dispatcher.prototype.init = function() {
   var self = {
     name: process.env.NODE_NAME,
     domain: process.env.DOMAIN,
     port: process.env.PORT
   };
+  db.child('nodes').on('value', function(nodesSnap) {
+    this._cluster = nodesSnap.val();
+  }.bind(this));
   this._cluster = {};
-  this.addNode(self);
-  if (!(process.env.IS_MASTER || false)) {
-    request(process.env.MASTER_URL + '/cluster/getAllNodes', function(err, response, body) {
-      var nodes = JSON.parse(body);
-      Object.keys(nodes).forEach(function(nodeName) {
-        var node = nodes[nodeName];
-        this.addNode(node);
-        addToNode(self, node);
-      }.bind(this));
-    }.bind(this));
-  }
+  db.child('nodes/' + self.name).set(self);
 }
 
 Dispatcher.prototype.getAllNodes = function() {
   return this._cluster;
 }
 
-Dispatcher.prototype.removeNode = function(nodeName) {
-  delete this._cluster[nodeName]
-}
-
-Dispatcher.prototype.addNode = function(node) {
-  if (!this._cluster[node.name]) {
-    this._cluster[node.name] = node;
-  }
-}
-
 Dispatcher.prototype.shutDown = function() {
   var selfName = process.env.NODE_NAME;
-  return Promise.all(
-    Object.keys(this._cluster).map(function(nodeName) {
-      if (nodeName == selfName) return null;
-      var node = this._cluster[nodeName];
-      return new Promise(function(resolve, reject) {
-        request({
-          method: 'POST',
-          url: getNodeDomainUrl(node) + '/cluster/removeNode',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          json: {
-            nodeName: selfName
-          }
-        }, resolve);
-      });
-    }.bind(this))
-  );
+  return new Promise(function(resolve, reject) {
+    db.child('nodes/' + selfName).remove(resolve);
+  });
 }
 
 Dispatcher.prototype.dispatch = function(url) {
