@@ -24,7 +24,9 @@ function getFullUrl(root, path, link) {
 
 var Parser = {
   parse: function(currentUrl, body) {
-    var htmlData = {};
+    var htmlData = {
+      url: currentUrl
+    };
     var $ = cheerio.load(body);
     var root, path = '';
     var pathStart = currentUrl.indexOf('/', 8);

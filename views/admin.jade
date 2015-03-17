@@ -15,4 +15,13 @@ block content
           td #{node.port}
 
     h3 Local crawler info
+    <div id="seedUrlSuccess" class="alert alert-success" role="alert" style="display:none">Successfully added seed</div>
+    form.form-horizontal(id='seed')
+      div.form-group
+        label.col-sm-2.control-label(for='seedUrl') Seed URL
+        div.col-sm-8
+          input(type='text' class='form-control' id='seedUrl' name='seedUrl')
+        div.col-sm-2
+          button(type='submit', class='btn btn-block btn-primary') Seed
+
     i none

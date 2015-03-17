@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
-var crawler = require('../config/Crawler');
+var crawler = require('../config/crawler');
 
 router.post('/queue', function(req, res, next) {
   crawler.queue(req.body.url);

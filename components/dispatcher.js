@@ -24,6 +24,7 @@ function getNodeDomainUrl(node) {
 }
 
 Dispatcher.prototype.init = function() {
+  console.log('initialized');
   var self = {
     name: process.env.NODE_NAME,
     domain: process.env.DOMAIN,
@@ -48,22 +49,24 @@ Dispatcher.prototype.shutDown = function() {
 }
 
 Dispatcher.prototype.dispatch = function(url) {
-  var allNodes = Objects.keys[this._cluster];
-  var hash = hashCode(url) % allNodes.length;
-  var dispatchNode = this._cluster[allNodes[hash]];
-  var queueUrl = getNodeDomainUrl(dispatchNode)  + '/crawlers/queue';
-  request({
-    method: 'POST',
-    url: queueUrl,
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    json: {
-      url: url
-    }
-  }, function(err, response, body) {
-    //TODO: handle error ... then needs to remove the node and notifier the cluster
-  });
+  if (url) {
+    var allNodes = Object.keys(this._cluster);
+    var hash = Math.abs(hashCode(url)) % allNodes.length;
+    var dispatchNode = this._cluster[allNodes[hash]];
+    var queueUrl = getNodeDomainUrl(dispatchNode)  + '/crawlers/queue';
+    request({
+      method: 'POST',
+      url: queueUrl,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      json: {
+        url: url
+      }
+    }, function(err, response, body) {
+      //TODO: handle error ... then needs to remove the node and notifier the cluster
+    });
+  }
 }
 
 module.exports = Dispatcher;
