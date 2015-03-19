@@ -14,6 +14,7 @@ Crawler.prototype.init = function(options) {
   var defaultOption = {
     callback: function(error, htmlData) {
       console.log('error', error);
+      console.log(htmlData.url);
       console.log(htmlData.title);
       console.log(htmlData.links.length);
     }
@@ -29,17 +30,19 @@ Crawler.prototype._crawl = function() {
   if (this._crawling) return;
   this._crawling = true;
   var url = this._queue.pop();
-  request(url, function(error, response, body) {
-    if (error) {
-      callback(error);
-    }
-    this._crawling = false;
-    var htmlData = htmlParser.parse(response.request.uri.href, body);
-    callback(null, htmlData);
-    if (this._queue.hasNext()) {
-      this._crawl();
-    }
-  }.bind(this));
+  if (url) {
+    request(url, function(error, response, body) {
+      if (error) {
+        callback(error);
+      }
+      this._crawling = false;
+      var htmlData = htmlParser.parse(url, body);
+      callback(null, htmlData);
+      if (this._queue.hasNext()) {
+        this._crawl();
+      }
+    }.bind(this));
+  }
 }
 
 Crawler.prototype.queue = function(url) {
